@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Arabic Letter Tracing</title>
+
+    <link rel="stylesheet" href="arabictracing.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- HEADER -->
+    <header class="header">
+
+        <button class="back-btn" onclick="goBack()">
+            ←
+        </button>
+
+        <div class="header-title">
+            <div class="arabic-title">
+                الحروف العربية
+            </div>
+
+            <div class="english-title">
+                Arabic Letters
+            </div>
+        </div>
+
+    </header>
+
+
+    <!-- LETTER -->
+    <section class="letter-section">
+
+        <div class="letter-row">
+
+            <div class="letter-display" id="letterDisplay">
+                ب
+            </div>
+
+            <button class="sound-btn" onclick="playLetterSound()">
+                🔊
+            </button>
+
+        </div>
+
+        <div class="letter-arabic-name" id="letterArabicName">
+            بَاء
+        </div>
+
+        <div class="letter-english-name" id="letterEnglishName">
+            Ba
+        </div>
+
+    </section>
+
+
+    <!-- INSTRUCTION -->
+    <section class="instruction">
+
+        <div
+            class="instruction-arabic"
+            id="instructionArabic"
+        >
+            تتبع الحرف على الخط المنقط
+        </div>
+
+        <div
+            class="instruction-english"
+            id="instructionEnglish"
+        >
+            Trace the letter on the dotted line
+        </div>
+
+    </section>
+
+
+    <!-- DRAWING AREA -->
+    <main class="drawing-area">
+
+        <canvas id="traceCanvas"></canvas>
+
+        <!-- RESULT -->
+        <div
+            id="result"
+            class="result"
+        ></div>
+
+    </main>
+
+
+    <!-- CONTROLS -->
+    <section class="controls">
+
+        <button
+            class="clear-btn"
+            onclick="clearCanvas()"
+        >
+            <span class="clear-icon">↻</span>
+
+            <span>
+                <span class="arabic-button">مسح</span>
+                <span class="english-button">Clear</span>
+            </span>
+        </button>
+
+
+        <button
+            class="next-btn"
+            onclick="nextLetter()"
+        >
+            <span>
+                <span class="arabic-button">التالي</span>
+                <span class="english-button">Next</span>
+            </span>
+
+            <span class="next-arrow">
+                →
+            </span>
+        </button>
+
+    </section>
+
+
+    <!-- BOTTOM TIP -->
+    <section class="tip">
+
+        <div class="tip-icon">
+            💡
+        </div>
+
+        <div>
+
+            <div
+                class="tip-arabic"
+                id="tipArabic"
+            >
+                ابدأ من النقطة الزرقاء
+            </div>
+
+            <div
+                class="tip-english"
+                id="tipEnglish"
+            >
+                Start from the blue dot and follow the dotted line
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- STREAK -->
+    <div class="streak-container">
+
+        <span>Correct streak:</span>
+
+        <strong id="streak">
+            0 / 5
+        </strong>
+
+    </div>
+
+</div>
+
+
+<script src="arabictracing.js"></script>
+
+</body>
+</html>

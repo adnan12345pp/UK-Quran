@@ -1,0 +1,634 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #f2f5fb;
+
+    font-family:
+        Arial,
+        "Noto Sans Arabic",
+        sans-serif;
+
+    color: #12366d;
+}
+
+
+.app {
+    width: min(650px, 95vw);
+
+    min-height: 95vh;
+
+    background: white;
+
+    border-radius: 28px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 15px 40px rgba(0, 45, 100, 0.12);
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    height: 105px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #164bb4,
+            #063a9d
+        );
+
+    color: white;
+
+    display: flex;
+    align-items: center;
+
+    position: relative;
+}
+
+
+.back-btn {
+    width: 60px;
+    height: 60px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: white;
+
+    color: #0742a5;
+
+    font-size: 40px;
+
+    position: absolute;
+    left: 20px;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: 0.2s;
+}
+
+.back-btn:hover {
+    transform: scale(1.05);
+}
+
+
+.header-title {
+    width: 100%;
+    text-align: center;
+}
+
+
+.arabic-title {
+    font-size: 30px;
+    font-weight: 700;
+
+    direction: rtl;
+}
+
+
+.english-title {
+    font-size: 25px;
+    font-weight: 500;
+
+    margin-top: 3px;
+}
+
+
+/* =========================
+   LETTER
+========================= */
+
+.letter-section {
+    text-align: center;
+
+    padding-top: 30px;
+}
+
+
+.letter-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+}
+
+
+.letter-display {
+    font-size: 90px;
+
+    line-height: 1;
+
+    font-weight: 700;
+
+    color: #082f78;
+
+    direction: rtl;
+}
+
+
+.sound-btn {
+    width: 70px;
+    height: 70px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: white;
+
+    box-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.15);
+
+    font-size: 30px;
+
+    cursor: pointer;
+
+    position: absolute;
+
+    right: 70px;
+
+    transition: 0.2s;
+}
+
+.sound-btn:hover {
+    transform: scale(1.05);
+}
+
+
+.letter-arabic-name {
+    font-size: 25px;
+
+    font-weight: 600;
+
+    direction: rtl;
+
+    margin-top: 5px;
+}
+
+
+.letter-english-name {
+    font-size: 25px;
+
+    font-weight: 600;
+
+    margin-top: 3px;
+}
+
+
+/* =========================
+   INSTRUCTION
+========================= */
+
+.instruction {
+    text-align: center;
+
+    padding: 12px 20px 18px;
+}
+
+
+.instruction-arabic {
+    font-size: 20px;
+
+    direction: rtl;
+
+    margin-bottom: 6px;
+}
+
+
+.instruction-english {
+    font-size: 18px;
+}
+
+
+/* =========================
+   DRAWING AREA
+========================= */
+
+.drawing-area {
+    width: calc(100% - 60px);
+
+    height: 360px;
+
+    margin: 0 auto;
+
+    border: 2px solid #174fae;
+
+    border-radius: 25px;
+
+    position: relative;
+
+    overflow: hidden;
+
+    background: #f9fbff;
+}
+
+
+#traceCanvas {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    touch-action: none;
+
+    cursor: crosshair;
+}
+
+
+/* =========================
+   RESULT
+========================= */
+
+.result {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    font-size: 100px;
+
+    font-weight: bold;
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    transition: 0.2s;
+}
+
+
+.result.correct {
+    color: #21a957;
+
+    opacity: 1;
+
+    animation: correctAnimation 0.5s ease;
+}
+
+
+.result.wrong {
+    color: #e53935;
+
+    opacity: 1;
+
+    animation: wrongAnimation 0.5s ease;
+}
+
+
+@keyframes correctAnimation {
+
+    0% {
+        transform: translate(-50%, -50%) scale(0.4);
+    }
+
+    70% {
+        transform: translate(-50%, -50%) scale(1.15);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+
+@keyframes wrongAnimation {
+
+    0% {
+        transform:
+            translate(-50%, -50%)
+            rotate(0deg);
+    }
+
+    25% {
+        transform:
+            translate(-50%, -50%)
+            rotate(-10deg);
+    }
+
+    50% {
+        transform:
+            translate(-50%, -50%)
+            rotate(10deg);
+    }
+
+    75% {
+        transform:
+            translate(-50%, -50%)
+            rotate(-10deg);
+    }
+
+    100% {
+        transform:
+            translate(-50%, -50%)
+            rotate(0deg);
+    }
+}
+
+
+/* =========================
+   CONTROLS
+========================= */
+
+.controls {
+    width: calc(100% - 60px);
+
+    margin: 22px auto 0;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 20px;
+}
+
+
+.clear-btn,
+.next-btn {
+
+    height: 78px;
+
+    border-radius: 18px;
+
+    border: none;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    transition: 0.2s;
+}
+
+
+.clear-btn {
+    width: 35%;
+
+    background: white;
+
+    color: #0b439f;
+
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.12);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 12px;
+}
+
+
+.clear-btn:hover {
+    transform: translateY(-2px);
+}
+
+
+.clear-icon {
+    font-size: 42px;
+}
+
+
+.next-btn {
+    width: 50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            #164fb7,
+            #0640a2
+        );
+
+    color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 20px;
+}
+
+
+.next-btn:hover {
+    transform: translateY(-2px);
+}
+
+
+.arabic-button {
+    display: block;
+
+    font-size: 24px;
+
+    font-weight: 700;
+
+    direction: rtl;
+}
+
+
+.english-button {
+    display: block;
+
+    font-size: 18px;
+
+    margin-top: 2px;
+}
+
+
+.next-arrow {
+    font-size: 42px;
+}
+
+
+/* =========================
+   TIP
+========================= */
+
+.tip {
+    width: calc(100% - 60px);
+
+    min-height: 90px;
+
+    margin: 22px auto;
+
+    border-radius: 20px;
+
+    background: #eef4ff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 18px;
+
+    text-align: center;
+}
+
+
+.tip-icon {
+    font-size: 35px;
+}
+
+
+.tip-arabic {
+    font-size: 18px;
+
+    direction: rtl;
+
+    margin-bottom: 5px;
+}
+
+
+.tip-english {
+    font-size: 16px;
+}
+
+
+/* =========================
+   STREAK
+========================= */
+
+.streak-container {
+    text-align: center;
+
+    padding-bottom: 18px;
+
+    font-size: 16px;
+
+    color: #57709a;
+}
+
+
+.streak-container strong {
+    color: #164fb7;
+
+    margin-left: 5px;
+}
+
+
+/* =========================
+   FREE DRAW MODE
+========================= */
+
+.free-mode .drawing-area {
+    background: white;
+}
+
+
+.free-mode #traceCanvas {
+    cursor: crosshair;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+    body {
+        align-items: flex-start;
+    }
+
+    .app {
+        width: 100%;
+        min-height: 100vh;
+
+        border-radius: 0;
+    }
+
+
+    .header {
+        height: 90px;
+    }
+
+
+    .back-btn {
+        width: 50px;
+        height: 50px;
+
+        left: 15px;
+
+        font-size: 32px;
+    }
+
+
+    .arabic-title {
+        font-size: 24px;
+    }
+
+
+    .english-title {
+        font-size: 20px;
+    }
+
+
+    .letter-display {
+        font-size: 75px;
+    }
+
+
+    .sound-btn {
+        width: 55px;
+        height: 55px;
+
+        right: 30px;
+
+        font-size: 25px;
+    }
+
+
+    .drawing-area {
+        width: calc(100% - 30px);
+
+        height: 350px;
+
+        border-radius: 20px;
+    }
+
+
+    .controls {
+        width: calc(100% - 30px);
+
+        gap: 10px;
+    }
+
+
+    .clear-btn {
+        width: 38%;
+    }
+
+
+    .next-btn {
+        width: 62%;
+    }
+
+
+    .tip {
+        width: calc(100% - 30px);
+    }
+
+}
