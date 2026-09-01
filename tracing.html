@@ -116,30 +116,21 @@
     border:2px solid #e3e7f5;
     touch-action:none;
     overflow:hidden;
+    transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+  .canvas-wrap.correct{
+    border-color:var(--good);
+    box-shadow:0 0 0 3px rgba(31,161,91,0.12);
+  }
+  .canvas-wrap.wrong{
+    border-color:var(--bad);
+    box-shadow:0 0 0 3px rgba(209,59,59,0.12);
   }
   canvas{
     display:block;
     width:100%;
     height:auto;
   }
-  .overlay-signal{
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    pointer-events:none;
-    opacity:0;
-    transition:opacity .15s ease;
-  }
-  .overlay-signal.show{opacity:1;}
-  .overlay-signal .glyph{
-    font-size:78px;
-    font-weight:700;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,0.18));
-  }
-  .overlay-signal.correct .glyph{color:var(--good);}
-  .overlay-signal.wrong .glyph{color:var(--bad);}
 
   .controls{
     display:flex;
@@ -203,8 +194,6 @@
       <p class="instruction" id="instructionText">Trace over the dotted guide, starting from the blue dot.</p>
       <div class="canvas-wrap" id="canvasWrap">
         <canvas id="board" width="320" height="240"></canvas>
-        <div class="overlay-signal correct" id="signalCorrect"><div class="glyph">✓</div></div>
-        <div class="overlay-signal wrong" id="signalWrong"><div class="glyph">✕</div></div>
       </div>
       <div class="controls">
         <button class="ctrl-btn clear" id="clearBtn">Clear</button>
@@ -736,8 +725,6 @@ const YAA = [
   const streakDotsWrap = document.getElementById("streakDots");
   const streakLabel = document.getElementById("streakLabel");
   const instructionText = document.getElementById("instructionText");
-  const signalCorrect = document.getElementById("signalCorrect");
-  const signalWrong = document.getElementById("signalWrong");
   const backBtn = document.getElementById("backBtn");
   const nextBtn = document.getElementById("nextBtn");
   const clearBtn = document.getElementById("clearBtn");
@@ -944,8 +931,8 @@ const YAA = [
 
   function showSignal(correct){
     locked = true;
-    const el = correct ? signalCorrect : signalWrong;
-    el.classList.add("show");
+    canvasWrap.classList.remove("correct", "wrong");
+    canvasWrap.classList.add(correct ? "correct" : "wrong");
 
     if(correct){
       continuousCorrect++;
@@ -956,12 +943,12 @@ const YAA = [
     updateStreakUI();
 
     setTimeout(()=>{
-      el.classList.remove("show");
+      canvasWrap.classList.remove("correct", "wrong");
       locked = false;
       resetAttempt();
       updateModeUI();
       redraw();
-    }, 1000);
+    }, 3000);
   }
 
   /* ---------- controls ---------- */
