@@ -32,6 +32,7 @@
   body{
     margin:0;
     min-height:100%;
+
     background:linear-gradient(
       180deg,
       #e7ebf7 0%,
@@ -1343,7 +1344,6 @@
 
   let locked = false;
 
-
   let allStrokes = [];
 
   let currentStroke = [];
@@ -1444,6 +1444,11 @@
     const letter =
       LETTERS[currentIndex];
 
+
+    /*
+      BLANK MODE:
+      Do NOT draw guide dots or letter guides.
+    */
 
     if(mode !== "tracing"){
       return;
@@ -1583,6 +1588,13 @@
   }
 
 
+  /* =========================================================
+     UPDATED USER STROKE DRAWING
+     
+     IMPORTANT:
+     A single point is now drawn as a black dot.
+     ========================================================= */
+
   function drawUserStrokes(strokes){
 
     ctx.lineJoin =
@@ -1594,6 +1606,9 @@
     ctx.strokeStyle =
       "#1a1a2e";
 
+    ctx.fillStyle =
+      "#1a1a2e";
+
     ctx.lineWidth =
       6;
 
@@ -1601,10 +1616,47 @@
     strokes.forEach(
       stroke=>{
 
-        if(stroke.length < 2){
+        /*
+          Ignore completely empty strokes.
+        */
+
+        if(!stroke || stroke.length === 0){
           return;
         }
 
+
+        /*
+          IMPORTANT FIX:
+
+          If the user taps a dot with no movement,
+          there is only ONE point.
+
+          Previously this was ignored.
+
+          Now it becomes a visible black dot.
+        */
+
+        if(stroke.length === 1){
+
+          ctx.beginPath();
+
+          ctx.arc(
+            stroke[0].x,
+            stroke[0].y,
+            3,
+            0,
+            Math.PI*2
+          );
+
+          ctx.fill();
+
+          return;
+        }
+
+
+        /*
+          Normal handwriting stroke.
+        */
 
         ctx.beginPath();
 
@@ -1640,7 +1692,17 @@
 
     clearCanvas();
 
+
+    /*
+      Draw guide first.
+    */
+
     drawGuides();
+
+
+    /*
+      Draw user's black writing AFTER guides.
+    */
 
     drawUserStrokes(
       allStrokes.concat(
@@ -1757,9 +1819,9 @@
 
 
       instructionText.textContent =
-        "No guides this time — draw " +
+        "Draw " +
         LETTERS[currentIndex].enName +
-        " anywhere on the board!";
+        " anywhere — include all dots.";
 
     }
     else{
@@ -1856,6 +1918,10 @@
       LETTERS[currentIndex];
 
 
+    /*
+      Main guide.
+    */
+
     l.guideDots.forEach(
       (g,i)=>{
 
@@ -1871,6 +1937,16 @@
       }
     );
 
+
+    /*
+      Separate dots.
+
+      This works in BOTH tracing and blank mode.
+
+      In blank mode these flags are not used
+      for the final shape comparison, but we
+      still track them.
+    */
 
     l.diacriticDots.forEach(
       (g,i)=>{
@@ -1958,6 +2034,14 @@
       );
 
 
+    /*
+      IMPORTANT:
+
+      Always start the stroke with one point.
+
+      This means even a simple tap is stored.
+    */
+
     currentStroke = [pos];
 
 
@@ -2003,6 +2087,13 @@
   }
 
 
+  /* =========================================================
+     UPDATED POINTER UP
+     
+     IMPORTANT:
+     Save even ONE-POINT strokes.
+     ========================================================= */
+
   function pointerUp(e){
 
     if(!isDrawing){
@@ -2013,8 +2104,24 @@
     isDrawing = false;
 
 
+    /*
+      IMPORTANT FIX:
+
+      Previously:
+
+        currentStroke.length > 1
+
+      That caused a dot tap to disappear.
+
+      Now:
+
+        currentStroke.length > 0
+
+      So a single tap becomes a saved stroke.
+    */
+
     if(
-      currentStroke.length > 1
+      currentStroke.length > 0
     ){
 
       allStrokes.push(
@@ -2029,6 +2136,11 @@
 
     redraw();
 
+
+    /*
+      Automatically check after the user
+      stops drawing.
+    */
 
     evalTimer =
       setTimeout(
@@ -2065,12 +2177,16 @@
 
   /* =========================================================
      BLANK MODE
-     POSITION-INDEPENDENT SHAPE RECOGNITION
+     POSITION-INDEPENDENT RECOGNITION
      ========================================================= */
 
 
   /*
-    Get every point drawn by the user.
+    Get all user points.
+
+    Includes:
+      - normal strokes
+      - single-point dot taps
   */
 
   function getUserPoints(){
@@ -2085,8 +2201,10 @@
           p=>{
 
             points.push({
+
               x:p.x,
               y:p.y
+
             });
 
           }
@@ -2100,8 +2218,10 @@
       p=>{
 
         points.push({
+
           x:p.x,
           y:p.y
+
         });
 
       }
@@ -2113,24 +2233,36 @@
   }
 
 
-  /*
-    Normalize the user's drawing.
+  /* =========================================================
+     GET STROKE GROUPS
+     ========================================================= */
 
-    This removes:
-      - X position
-      - Y position
-      - size
+  function getUserStrokes(){
 
-    Therefore:
+    return allStrokes
+      .filter(
+        stroke =>
+          stroke &&
+          stroke.length > 0
+      )
+      .map(
+        stroke =>
+          stroke.map(
+            p=>({
+              x:p.x,
+              y:p.y
+            })
+          )
+      );
 
-        small letter at left
+  }
 
-    and
 
-        big letter at right
-
-    can still be compared.
-  */
+  /* =========================================================
+     NORMALIZE POINTS
+     
+     Removes absolute position and scale.
+     ========================================================= */
 
   function normalizePoints(
     points
@@ -2221,90 +2353,56 @@
   }
 
 
-  /*
-    Create the reference shape.
+  /* =========================================================
+     RESAMPLE
+     ========================================================= */
 
-    We use the actual letter skeleton
-    rather than its screen position.
-  */
-
-  function getReferencePoints(
-    letter
+  function resamplePoints(
+    points,
+    count
   ){
 
-    const points = [];
+    if(
+      points.length <= count
+    ){
+
+      return points.slice();
+
+    }
 
 
-    /*
-      Base letter
-    */
-
-    letter.guideDots.forEach(
-      p=>{
-
-        points.push({
-
-          x:p.x,
-
-          y:p.y
-
-        });
-
-      }
-    );
+    const result = [];
 
 
-    /*
-      Add the letter dots.
+    for(
+      let i=0;
+      i<count;
+      i++
+    ){
 
-      Multiple points around the dot give
-      the dot more importance.
-    */
-
-    letter.diacriticDots.forEach(
-      p=>{
-
-        for(
-          let i=0;
-          i<12;
-          i++
-        ){
-
-          const angle =
-            (
-              Math.PI*2*i
-            ) / 12;
+      const index =
+        Math.floor(
+          i *
+          (points.length-1) /
+          (count-1)
+        );
 
 
-          points.push({
+      result.push(
+        points[index]
+      );
 
-            x:
-              p.x +
-              Math.cos(angle)*4,
-
-            y:
-              p.y +
-              Math.sin(angle)*4
-
-          });
-
-        }
-
-      }
-    );
+    }
 
 
-    return points;
+    return result;
 
   }
 
 
-  /*
-    Calculate nearest-neighbour distance.
-
-    This compares shapes rather than their
-    absolute positions.
-  */
+  /* =========================================================
+     NEAREST DISTANCE
+     ========================================================= */
 
   function averageNearestDistance(
     source,
@@ -2372,66 +2470,443 @@
   }
 
 
-  /*
-    Resample a point set.
+  /* =========================================================
+     GET REFERENCE BASE SHAPE
+     ========================================================= */
 
-    This prevents a user who draws with
-    many mouse points from getting a
-    different result from someone who
-    draws with fewer points.
-  */
-
-  function resamplePoints(
-    points,
-    count
+  function getReferenceBasePoints(
+    letter
   ){
 
-    if(
-      points.length <= count
-    ){
+    return letter.guideDots.map(
+      p=>({
 
-      return points.slice();
+        x:p.x,
 
-    }
+        y:p.y
 
-
-    const result = [];
-
-
-    for(
-      let i=0;
-      i<count;
-      i++
-    ){
-
-      const index =
-        Math.floor(
-          i *
-          (points.length-1) /
-          (count-1)
-        );
-
-
-      result.push(
-        points[index]
-      );
-
-    }
-
-
-    return result;
+      })
+    );
 
   }
 
 
-  /*
-    Compare user shape with reference shape.
-  */
+  /* =========================================================
+     GET REFERENCE DOTS
+     ========================================================= */
 
-  function compareLetterShape(
-    userPoints,
-    referencePoints
+  function getReferenceDotPoints(
+    letter
   ){
+
+    return letter.diacriticDots.map(
+      p=>({
+
+        x:p.x,
+
+        y:p.y
+
+      })
+    );
+
+  }
+
+
+  /* =========================================================
+     FIND USER DOTS
+     
+     A dot is considered a separate small stroke
+     when it contains very few points.
+     ========================================================= */
+
+  function getPossibleUserDotPoints(){
+
+    const dots = [];
+
+
+    allStrokes.forEach(
+      stroke=>{
+
+        if(
+          !stroke ||
+          stroke.length === 0
+        ){
+
+          return;
+
+        }
+
+
+        /*
+          A direct tap is definitely a dot candidate.
+        */
+
+        if(
+          stroke.length <= 3
+        ){
+
+          let sumX = 0;
+          let sumY = 0;
+
+
+          stroke.forEach(
+            p=>{
+
+              sumX += p.x;
+              sumY += p.y;
+
+            }
+          );
+
+
+          dots.push({
+
+            x:
+              sumX /
+              stroke.length,
+
+            y:
+              sumY /
+              stroke.length
+
+          });
+
+        }
+
+      }
+    );
+
+
+    return dots;
+
+  }
+
+
+  /* =========================================================
+     CHECK DOTS IN BLANK MODE
+     
+     Position is normalized relative to the user's
+     complete drawing.
+     ========================================================= */
+
+  function checkBlankModeDots(
+    letter,
+    userAllPoints
+  ){
+
+    /*
+      If the letter has no dots,
+      nothing needs to be checked.
+    */
+
+    if(
+      letter.diacriticDots.length === 0
+    ){
+
+      return true;
+
+    }
+
+
+    /*
+      Find small independent user strokes.
+    */
+
+    const userDotPoints =
+      getPossibleUserDotPoints();
+
+
+    /*
+      The user must make at least as many
+      independent dot strokes as required.
+    */
+
+    if(
+      userDotPoints.length <
+      letter.diacriticDots.length
+    ){
+
+      return false;
+
+    }
+
+
+    /*
+      Normalize the complete drawing
+      so dot positions can be compared
+      independent of board position and size.
+    */
+
+    const normalizedAll =
+      normalizePoints(
+        userAllPoints
+      );
+
+
+    /*
+      Calculate original reference bounds.
+    */
+
+    const referenceBase =
+      getReferenceBasePoints(
+        letter
+      );
+
+
+    const referenceNormalized =
+      normalizePoints(
+        referenceBase
+      );
+
+
+    /*
+      Reference bounding box is based on
+      the main letter shape.
+    */
+
+    let refMinX = Infinity;
+    let refMinY = Infinity;
+    let refMaxX = -Infinity;
+    let refMaxY = -Infinity;
+
+
+    referenceBase.forEach(
+      p=>{
+
+        refMinX =
+          Math.min(
+            refMinX,
+            p.x
+          );
+
+        refMinY =
+          Math.min(
+            refMinY,
+            p.y
+          );
+
+        refMaxX =
+          Math.max(
+            refMaxX,
+            p.x
+          );
+
+        refMaxY =
+          Math.max(
+            refMaxY,
+            p.y
+          );
+
+      }
+    );
+
+
+    const refWidth =
+      Math.max(
+        refMaxX-refMinX,
+        1
+      );
+
+
+    const refHeight =
+      Math.max(
+        refMaxY-refMinY,
+        1
+      );
+
+
+    /*
+      Convert reference dots to normalized
+      positions relative to the base letter.
+    */
+
+    const normalizedReferenceDots =
+      letter.diacriticDots.map(
+        dot=>({
+
+          x:
+            (dot.x-refMinX) /
+            refWidth,
+
+          y:
+            (dot.y-refMinY) /
+            refHeight
+
+        })
+      );
+
+
+    /*
+      User overall bounds.
+    */
+
+    let userMinX = Infinity;
+    let userMinY = Infinity;
+    let userMaxX = -Infinity;
+    let userMaxY = -Infinity;
+
+
+    userAllPoints.forEach(
+      p=>{
+
+        userMinX =
+          Math.min(
+            userMinX,
+            p.x
+          );
+
+        userMinY =
+          Math.min(
+            userMinY,
+            p.y
+          );
+
+        userMaxX =
+          Math.max(
+            userMaxX,
+            p.x
+          );
+
+        userMaxY =
+          Math.max(
+            userMaxY,
+            p.y
+          );
+
+      }
+    );
+
+
+    const userWidth =
+      Math.max(
+        userMaxX-userMinX,
+        1
+      );
+
+
+    const userHeight =
+      Math.max(
+        userMaxY-userMinY,
+        1
+      );
+
+
+    /*
+      Convert each user dot candidate
+      into the same normalized coordinate system.
+    */
+
+    const normalizedUserDots =
+      userDotPoints.map(
+        dot=>({
+
+          x:
+            (dot.x-userMinX) /
+            userWidth,
+
+          y:
+            (dot.y-userMinY) /
+            userHeight
+
+        })
+      );
+
+
+    /*
+      Each reference dot needs a nearby
+      user dot.
+
+      We intentionally use a generous threshold
+      because handwritten dots can be slightly
+      displaced.
+    */
+
+    const DOT_THRESHOLD =
+      0.22;
+
+
+    const used =
+      new Array(
+        normalizedUserDots.length
+      ).fill(false);
+
+
+    for(
+      const refDot of
+      normalizedReferenceDots
+    ){
+
+      let found = false;
+
+
+      for(
+        let i=0;
+        i<normalizedUserDots.length;
+        i++
+      ){
+
+        if(used[i]){
+          continue;
+        }
+
+
+        const userDot =
+          normalizedUserDots[i];
+
+
+        const d =
+          Math.hypot(
+            refDot.x-userDot.x,
+            refDot.y-userDot.y
+          );
+
+
+        if(
+          d <= DOT_THRESHOLD
+        ){
+
+          used[i] = true;
+
+          found = true;
+
+          break;
+
+        }
+
+      }
+
+
+      if(!found){
+
+        return false;
+
+      }
+
+    }
+
+
+    return true;
+
+  }
+
+
+  /* =========================================================
+     BLANK MODE SHAPE RECOGNITION
+     ========================================================= */
+
+  function recognizeBlankLetter(){
+
+    const letter =
+      LETTERS[currentIndex];
+
+
+    const userPoints =
+      getUserPoints();
+
+
+    /*
+      Need enough points for the main shape.
+    */
 
     if(
       userPoints.length < 8
@@ -2443,51 +2918,51 @@
 
 
     /*
-      Normalize both shapes.
+      ----------------------------------------
+      MAIN LETTER SHAPE
+      ----------------------------------------
     */
 
-    const user =
+    const referenceBase =
+      getReferenceBasePoints(
+        letter
+      );
+
+
+    const userNormalized =
       normalizePoints(
         userPoints
       );
 
 
-    const reference =
+    const referenceNormalized =
       normalizePoints(
-        referencePoints
+        referenceBase
       );
 
 
-    /*
-      Reduce point count.
-    */
-
     const userSample =
       resamplePoints(
-        user,
+        userNormalized,
         120
       );
 
 
     const referenceSample =
       resamplePoints(
-        reference,
+        referenceNormalized,
         120
       );
 
 
-    /*
-      Compare both directions.
-    */
-
-    const distanceUserToReference =
+    const forward =
       averageNearestDistance(
         userSample,
         referenceSample
       );
 
 
-    const distanceReferenceToUser =
+    const reverse =
       averageNearestDistance(
         referenceSample,
         userSample
@@ -2496,20 +2971,13 @@
 
     const finalDistance =
       (
-        distanceUserToReference +
-        distanceReferenceToUser
+        forward +
+        reverse
       ) / 2;
 
 
     /*
-      Additional bounding-box ratio.
-
-      This prevents very different proportions
-      from being accepted.
-
-      Example:
-
-        very wide shape ≠ tall shape
+      Bounding ratio.
     */
 
     function getBounds(points){
@@ -2572,7 +3040,7 @@
 
     const referenceBounds =
       getBounds(
-        referencePoints
+        referenceBase
       );
 
 
@@ -2594,8 +3062,7 @@
 
     const ratioDifference =
       Math.abs(
-        userRatio -
-        referenceRatio
+        userRatio-referenceRatio
       ) /
       Math.max(
         referenceRatio,
@@ -2603,60 +3070,27 @@
       );
 
 
-    /*
-      Main shape threshold.
-
-      Lower = stricter.
-
-      0.12 = fairly strict
-      0.15 = more forgiving
-      0.18 = very forgiving
-    */
-
     const SHAPE_THRESHOLD =
       0.15;
 
-
-    /*
-      Width/height tolerance.
-    */
 
     const RATIO_THRESHOLD =
       0.65;
 
 
-    return (
+    const mainShapeCorrect =
       finalDistance <=
-        SHAPE_THRESHOLD &&
+      SHAPE_THRESHOLD;
 
+
+    const ratioCorrect =
       ratioDifference <=
-        RATIO_THRESHOLD
-    );
+      RATIO_THRESHOLD;
 
-  }
-
-
-  /*
-    Main blank-mode recognizer.
-  */
-
-  function recognizeBlankLetter(){
-
-    const letter =
-      LETTERS[currentIndex];
-
-
-    const userPoints =
-      getUserPoints();
-
-
-    /*
-      Need enough points to recognize
-      something as a letter.
-    */
 
     if(
-      userPoints.length < 8
+      !mainShapeCorrect ||
+      !ratioCorrect
     ){
 
       return false;
@@ -2664,15 +3098,100 @@
     }
 
 
-    const referencePoints =
-      getReferencePoints(
-        letter
+    /*
+      ----------------------------------------
+      DOT CHECK
+      ----------------------------------------
+
+      This is the new important part.
+
+      For:
+
+        ب -> one dot
+        ت -> two dots
+        ث -> three dots
+        ج -> one dot
+        خ -> one dot
+        ذ -> one dot
+        ز -> one dot
+        ش -> three dots
+        ض -> one dot
+        ظ -> one dot
+        غ -> one dot
+        ف -> one dot
+        ق -> two dots
+        ن -> one dot
+        ي -> two dots
+
+      the user must also provide the
+      corresponding dot strokes.
+    */
+
+    const dotsCorrect =
+      checkBlankModeDots(
+        letter,
+        userPoints
       );
 
 
-    return compareLetterShape(
-      userPoints,
-      referencePoints
+    return dotsCorrect;
+
+  }
+
+
+  /* =========================================================
+     TRACING MODE VALIDATION
+     ========================================================= */
+
+  function evaluateTracing(){
+
+    const l =
+      LETTERS[currentIndex];
+
+
+    const allGuideTouched =
+      touchedGuide.every(
+        Boolean
+      );
+
+
+    const allDiacriticTouched =
+      touchedDiacritic.every(
+        Boolean
+      );
+
+
+    if(
+      strokePoints.length === 0
+    ){
+
+      return false;
+
+    }
+
+
+    let strayed = false;
+
+
+    if(
+      l.guideDots.length ||
+      l.diacriticDots.length
+    ){
+
+      strayed =
+        strokePoints.some(
+          p =>
+            nearestGuideDist(p) >
+            STRAY_THRESHOLD
+        );
+
+    }
+
+
+    return (
+      allGuideTouched &&
+      allDiacriticTouched &&
+      !strayed
     );
 
   }
@@ -2699,25 +3218,17 @@
     }
 
 
-    const l =
-      LETTERS[currentIndex];
-
-
     /*
-      ========================================================
+      =========================================
       BLANK MODE
-      ========================================================
+      =========================================
 
-      IMPORTANT:
+      No fixed position.
 
-      We completely ignore:
+      No guide touching requirement.
 
-        touchedGuide
-        touchedDiacritic
-        STRAY_THRESHOLD
-
-      The user can draw anywhere on the board.
-      */
+      Shape + dots are checked.
+    */
 
     if(mode === "blank"){
 
@@ -2736,45 +3247,13 @@
 
 
     /*
-      ========================================================
+      =========================================
       TRACING MODE
-      ========================================================
+      =========================================
     */
 
-    const allGuideTouched =
-      touchedGuide.every(
-        Boolean
-      );
-
-
-    const allDiacriticTouched =
-      touchedDiacritic.every(
-        Boolean
-      );
-
-
-    let strayed = false;
-
-
-    if(
-      l.guideDots.length ||
-      l.diacriticDots.length
-    ){
-
-      strayed =
-        strokePoints.some(
-          p =>
-            nearestGuideDist(p) >
-            STRAY_THRESHOLD
-        );
-
-    }
-
-
     const correct =
-      allGuideTouched &&
-      allDiacriticTouched &&
-      !strayed;
+      evaluateTracing();
 
 
     showSignal(
@@ -2785,7 +3264,7 @@
 
 
   /* =========================================================
-     CORRECT / WRONG SIGNAL
+     CORRECT / WRONG
      ========================================================= */
 
   function showSignal(
@@ -2821,8 +3300,8 @@
 
 
     /*
-      Five consecutive correct answers
-      unlock Blank Mode.
+      Five correct in a row
+      unlocks Blank Mode.
     */
 
     mode =
@@ -2934,6 +3413,16 @@
       evaluateAttempt();
 
     }
+  );
+
+
+  /* =========================================================
+     PREVENT CONTEXT MENU
+     ========================================================= */
+
+  canvas.addEventListener(
+    "contextmenu",
+    e=>e.preventDefault()
   );
 
 
