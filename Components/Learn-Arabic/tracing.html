@@ -957,7 +957,30 @@ const YAA = [
 
   function drawGuides(){
     const letter = LETTERS[currentIndex];
-    if(mode !== "tracing") return;
+    if(mode !== "tracing"){
+      const start = letter.guideDots[0];
+      const end = letter.guideDots[letter.guideDots.length - 1];
+      if(!start || !end) return;
+
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, 7, 0, Math.PI*2);
+      ctx.fillStyle = "#2fbf71";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, 7, 0, Math.PI*2);
+      ctx.fillStyle = "#d13b3b";
+      ctx.fill();
+
+      // Keep the letter's identifying dots visible while hiding its guide.
+      letter.diacriticDots.forEach(p=>{
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+        ctx.fillStyle = "#f2b705";
+        ctx.fill();
+      });
+      return;
+    }
 
     // dotted structural guide
     letter.guideDots.forEach((p,i)=>{
