@@ -827,8 +827,62 @@ const YAA = [
 
   function drawGuides(){
     const letter = LETTERS[currentIndex];
-    if(mode !== "tracing") return;
 
+    // BLANK MODE:
+    // Hide the full dotted guide, but keep a clear start and end point.
+    if(mode === "blank"){
+      const start = letter.guideDots[0];
+      const end = letter.guideDots[letter.guideDots.length - 1];
+
+      // Start point - blue
+      if(start){
+        ctx.save();
+
+        ctx.beginPath();
+        ctx.arc(start.x, start.y, 11, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(26, 86, 255, 0.12)";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(start.x, start.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = "#1a56ff";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(start.x - 2, start.y - 2, 2, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // End point - green
+      if(end){
+        ctx.save();
+
+        ctx.beginPath();
+        ctx.arc(end.x, end.y, 11, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(47, 191, 113, 0.14)";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(end.x, end.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = "#2fbf71";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(end.x - 2, end.y - 2, 2, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      return;
+    }
+
+    // TRACING MODE:
+    // Draw the complete dotted structural guide.
     // dotted structural guide
     letter.guideDots.forEach((p,i)=>{
       const done = touchedGuide[i];
@@ -928,7 +982,7 @@ const YAA = [
     if(mode === "blank"){
       modeBadge.textContent = "BLANK MODE";
       modeBadge.className = "mode-badge blank";
-      instructionText.textContent = "No guides this time — draw " + LETTERS[currentIndex].enName + " from memory!";
+      instructionText.textContent = "Start at the blue dot and finish at the green dot — draw " + LETTERS[currentIndex].enName + " from memory!";
     } else {
       modeBadge.textContent = "TRACING MODE";
       modeBadge.className = "mode-badge tracing";
