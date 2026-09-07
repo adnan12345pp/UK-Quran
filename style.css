@@ -782,13 +782,13 @@ input:focus {
 }
 
 .btn-squareq { 
-    width: 100%; display: flex; align-items: center; justify-content: end; min-height: 120px; 
+    width: 100%; display: flex; align-items: center; justify-content: start; min-height: 120px; 
     border-radius: 20px; border: 1px solid #fff; 
     background-image: url(images/Banner/banner-2-reverse.webp); background-size: cover; background-position: center; 
     color: black; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); 
 }
 .btn-squarew { 
-    width: 100%; display: flex; align-items: center; justify-content: end; min-height: 120px; 
+    width: 100%; display: flex; align-items: center; justify-content: start; min-height: 120px; 
     border-radius: 20px; border: 1px solid #fff; 
     background-image: url(images/Banner/banner-2-reverse.webp); background-size: cover; background-position: center; 
     color: black; font-weight: 700; cursor: pointer; font-size: 15px; padding: 0 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); 
