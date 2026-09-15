@@ -923,7 +923,7 @@
   <p class="final-score">
     Score:
     <b id="final-score-val">0</b>
-    / <b id="max-score-val">360</b>
+    / <b id="max-score-val">340</b>
   </p>
 
   <p class="final-grade" id="final-grade">Excellent</p>
@@ -1760,6 +1760,16 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
       letterSet || LETTERS;
 
 
+    var motionScale =
+      set.length >= 28
+        ? 0.72
+        : set.length >= 21
+          ? 0.8
+          : set.length >= 14
+            ? 0.9
+            : 1;
+
+
     board.innerHTML = "";
 
     tiles =
@@ -1847,14 +1857,14 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
             ampX:
               reduceMotion
                 ? 4
-                : 10 +
-                  Math.random() * 10,
+                : (10 +
+                  Math.random() * 10) * motionScale,
 
             ampY:
               reduceMotion
                 ? 3
-                : 6 +
-                  Math.random() * 8,
+                : (6 +
+                  Math.random() * 8) * motionScale,
 
             phaseX:
               Math.random() * 6.28,
@@ -1869,8 +1879,8 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
             rotAmp:
               reduceMotion
                 ? 2
-                : 5 +
-                  Math.random() * 5,
+                : (5 +
+                  Math.random() * 5) * motionScale,
 
             phaseR:
               Math.random() * 6.28
@@ -1970,6 +1980,18 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
   function computeColumns(){
 
+    var count =
+      tiles.length || 7;
+
+
+    if(count >= 28){
+      return 9;
+    }
+
+    if(count >= 21){
+      return 8;
+    }
+
     return 7;
 
   }
@@ -1997,11 +2019,11 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
 
     var topPad =
-      boardH * 0.16;
+      boardH * 0.12;
 
 
     var bottomPad =
-      boardH * 0.22;
+      boardH * 0.12;
 
 
     var usableH =
@@ -2014,7 +2036,7 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
       boardW / cols;
 
 
-    var gap = 4;
+    var gap = 2;
 
 
     var tileH =
