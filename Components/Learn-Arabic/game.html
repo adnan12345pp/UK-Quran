@@ -2730,6 +2730,30 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
   }
 
+  function hasVisibleTargetOnBoard(){
+
+    if(
+      !target
+    ){
+
+      return false;
+
+    }
+
+
+    return tiles.some(
+      function(t){
+
+        return t.ch === target.ch &&
+          t.el &&
+          t.el.style.visibility !== "hidden";
+
+      }
+    );
+
+  }
+
+
   function startRound(){
 
     if(
@@ -2807,7 +2831,13 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
     );
 
 
-    speak(target);
+    if(
+      hasVisibleTargetOnBoard()
+    ){
+
+      speak(target);
+
+    }
 
   }
 
@@ -2953,7 +2983,13 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
     playFail();
 
 
-    speak(target);
+    if(
+      hasVisibleTargetOnBoard()
+    ){
+
+      speak(target);
+
+    }
 
 
     showFeedback(
@@ -3245,6 +3281,7 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
       if(
         target &&
+        hasVisibleTargetOnBoard() &&
         (
           state === STATE.FALLING ||
           state === STATE.FEEDBACK
