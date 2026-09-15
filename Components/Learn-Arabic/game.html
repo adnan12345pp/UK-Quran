@@ -45,7 +45,7 @@
     width:100%;
     height:100%;
     overflow:hidden;
-    background-image:url("../../images/Background/game.webp");
+    background-image:url("../../images/Background/download.webp");
     background-size:cover;
     background-position:center;
     background-repeat:no-repeat;
@@ -1019,6 +1019,8 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
   var SOUNDS_PER_ROUND = 9;
 
   var POINTS_PER_LETTER = 10;
+
+  var FALL_SPEED_PX_PER_SEC = 42;
 
   var MAX_SCORE =
     ROUND_SIZES.length *
@@ -2777,8 +2779,7 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
 
     var fallSpeed =
-      34 +
-      Math.random() * 8;
+      FALL_SPEED_PX_PER_SEC;
 
 
     tiles.forEach(
