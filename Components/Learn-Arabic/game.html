@@ -1009,6 +1009,38 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
   ];
 
+  var LETTER_AUDIO = {
+    "ا":"../../audios/arabic-letters/01.mp3",
+    "ب":"../../audios/arabic-letters/02.mp3",
+    "ت":"../../audios/arabic-letters/03.mp3",
+    "ث":"../../audios/arabic-letters/04.mp3",
+    "ج":"../../audios/arabic-letters/05.mp3",
+    "ح":"../../audios/arabic-letters/06.mp3",
+    "خ":"../../audios/arabic-letters/07.mp3",
+    "د":"../../audios/arabic-letters/08.mp3",
+    "ذ":"../../audios/arabic-letters/09.mp3",
+    "ر":"../../audios/arabic-letters/10.mp3",
+    "ز":"../../audios/arabic-letters/11.mp3",
+    "س":"../../audios/arabic-letters/12.mp3",
+    "ش":"../../audios/arabic-letters/13.mp3",
+    "ص":"../../audios/arabic-letters/14.mp3",
+    "ض":"../../audios/arabic-letters/15.mp3",
+    "ط":"../../audios/arabic-letters/16.mp3",
+    "ظ":"../../audios/arabic-letters/17.mp3",
+    "ع":"../../audios/arabic-letters/18.mp3",
+    "غ":"../../audios/arabic-letters/19.mp3",
+    "ف":"../../audios/arabic-letters/20.mp3",
+    "ق":"../../audios/arabic-letters/21.mp3",
+    "ك":"../../audios/arabic-letters/22.mp3",
+    "ل":"../../audios/arabic-letters/23.mp3",
+    "م":"../../audios/arabic-letters/24.mp3",
+    "ن":"../../audios/arabic-letters/25.mp3",
+    "ه":"../../audios/arabic-letters/26.mp3",
+    "هـ":"../../audios/arabic-letters/26.mp3",
+    "و":"../../audios/arabic-letters/27.mp3",
+    "ي":"../../audios/arabic-letters/28.mp3"
+  };
+
 
   /* =========================================================
      ROUND SETTINGS
@@ -1417,75 +1449,109 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
   /* =========================================================
      LETTER AUDIO
   ========================================================= */
+function speak(letter, onComplete){
 
-  function speak(letter){
+  if(
+    !letter ||
+    !letter.ch
+  ){
+    if(typeof onComplete === "function"){
+      onComplete();
+    }
+    return;
+  }
 
-    if(
-      !letter ||
-      !letter.ch
-    ) return;
+  var audioPath =
+    LETTER_AUDIO[letter.ch] ||
+    LETTER_AUDIO["هـ"];
 
-
+  if(!audioPath){
     var index =
       LETTERS.findIndex(
         function(item){
-
           return item.ch === letter.ch;
-
         }
       );
 
-
-    if(index < 0) return;
-
-
-    var audioNumber =
-      (index % 28) + 1;
-
-
-    var audio =
-      new Audio(
+    if(index >= 0){
+      audioPath =
         "../../audios/arabic-letters/" +
-        String(audioNumber).padStart(2,"0") +
-        ".mp3"
+        String((index % 28) + 1).padStart(2,"0") +
+        ".mp3";
+    }
+  }
+
+  if(!audioPath){
+    if(typeof onComplete === "function"){
+      onComplete();
+    }
+    return;
+  }
+
+  var audio =
+    new Audio(audioPath);
+
+  audio.preload = "auto";
+
+  var completed = false;
+
+  function finishAudio(){
+
+    if(completed){
+      return;
+    }
+
+    completed = true;
+
+    speakerBtn.classList.remove("speaking");
+
+    if(typeof onComplete === "function"){
+      onComplete();
+    }
+  }
+
+  audio.onplay =
+    function(){
+
+      speakerBtn.classList.add(
+        "speaking"
       );
 
+    };
 
-    audio.preload = "auto";
+  audio.onended =
+    function(){
 
+      finishAudio();
 
-    audio.onplay =
-      function(){
+    };
 
-        speakerBtn.classList.add(
-          "speaking"
-        );
+  audio.onerror =
+    function(){
 
-      };
+      console.error(
+        "Unable to play letter audio:",
+        audio.src
+      );
 
+      finishAudio();
 
-    audio.onended =
-    audio.onerror =
-      function(){
+    };
 
-        speakerBtn.classList.remove(
-          "speaking"
-        );
+  audio.play().catch(
+    function(error){
 
-      };
+      console.error(
+        "Audio playback failed:",
+        error,
+        audio.src
+      );
 
+      finishAudio();
 
-    audio.play().catch(
-      function(){
-
-        speakerBtn.classList.remove(
-          "speaking"
-        );
-
-      }
-    );
-
-  }
+    }
+  );
+}
 
 
   /* =========================================================
@@ -2776,92 +2842,117 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
   }
 
 
-  function startRound(){
+function startRound(){
 
-    if(
-      state === STATE.GAMEOVER
-    ){
+  if(
+    state === STATE.GAMEOVER
+  ){
+    return;
+  }
 
-      return;
+  if(
+    !targetQueue.length
+  ){
+
+    completeRound();
+
+    return;
+
+  }
+
+  var targetIndex =
+    Math.floor(
+      Math.random() * targetQueue.length
+    );
+
+  target =
+    targetQueue.splice(
+      targetIndex,
+      1
+    )[0];
+
+  shownLetters[
+    target.ch
+  ] = true;
+
+  lastShownLetter =
+    target.ch;
+
+  promptLabel.textContent =
+    target.ch;
+
+  var fallSpeed =
+    FALL_SPEED_PX_PER_SEC;
+
+  tiles.forEach(
+    function(t){
+
+      t.vy =
+        fallSpeed;
+
+      t.fallOffset =
+        0;
+
+      t.grounded =
+        false;
 
     }
+  );
 
+  /*
+    IMPORTANT:
+    Do NOT start FALLING here.
 
-    if(
-      !targetQueue.length
-    ){
+    First play the complete letter sound.
+  */
 
-      completeRound();
+  state =
+    STATE.SHUFFLE;
 
-      return;
+  promptWrap.classList.add(
+    "visible"
+  );
 
-    }
+  if(
+    hasVisibleTargetOnBoard()
+  ){
 
+    speak(
+      target,
 
-    var targetIndex =
-      Math.floor(
-        Math.random() * targetQueue.length
-      );
+      function(){
 
+        /*
+          The audio has completely finished.
+          NOW start the falling animation.
+        */
 
-    target =
-      targetQueue.splice(
-        targetIndex,
-        1
-      )[0];
+        if(
+          state === STATE.GAMEOVER
+        ){
+          return;
+        }
 
-
-    shownLetters[
-      target.ch
-    ] = true;
-
-
-    lastShownLetter =
-      target.ch;
-
-
-    promptLabel.textContent =
-      target.ch;
-
-
-    var fallSpeed =
-      FALL_SPEED_PX_PER_SEC;
-
-
-    tiles.forEach(
-      function(t){
-
-        t.vy =
-          fallSpeed;
-
-        t.fallOffset =
-          0;
-
-        t.grounded =
-          false;
+        state =
+          STATE.FALLING;
 
       }
     );
 
+  }else{
+
+    /*
+      Safety fallback:
+      If the target isn't visible,
+      start falling without audio.
+    */
 
     state =
       STATE.FALLING;
 
-
-    promptWrap.classList.add(
-      "visible"
-    );
-
-
-    if(
-      hasVisibleTargetOnBoard()
-    ){
-
-      speak(target);
-
-    }
-
   }
+
+}
 
 
   /* =========================================================
