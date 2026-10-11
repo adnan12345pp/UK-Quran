@@ -40,7 +40,6 @@ This project is a static website. Serve it from the project root using any local
 If you have another static file server, point it at the project root and open `index.html`.
 
 ## Notes
-
 - The app uses Firebase Authentication and Realtime Database, configured in `JavaScript/firebase-config.js`.
 - Students and teachers have separate dashboards located in `Components/Student/student.html` and `Components/Teacher/teacher.html`.
 - Static resources are referenced using relative paths; serve the app from the project root to avoid broken links.
