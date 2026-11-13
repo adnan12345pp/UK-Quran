@@ -1059,6 +1059,7 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { get, ref, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, database } from "../../JavaScript/firebase-config.js";
+import { LEVEL1_ROUNDS } from "./game-content.js";
 
 (function(){
 
@@ -1066,106 +1067,34 @@ import { auth, database } from "../../JavaScript/firebase-config.js";
 
 
   /* =========================================================
-     LETTER DATA
-  ========================================================= */
-
-  var LETTERS = [
-
-    {ch:"ا", name:"ألف"},
-    {ch:"ب", name:"باء"},
-    {ch:"ت", name:"تاء"},
-    {ch:"ث", name:"ثاء"},
-    {ch:"ج", name:"جيم"},
-    {ch:"ح", name:"حاء"},
-
-    {ch:"خ", name:"خاء"},
-    {ch:"د", name:"دال"},
-    {ch:"ذ", name:"ذال"},
-    {ch:"ر", name:"راء"},
-    {ch:"ز", name:"زاي"},
-    {ch:"س", name:"سين"},
-
-    {ch:"ش", name:"شين"},
-    {ch:"ص", name:"صاد"},
-    {ch:"ض", name:"ضاد"},
-    {ch:"ط", name:"طاء"},
-    {ch:"ظ", name:"ظاء"},
-    {ch:"ع", name:"عين"},
-
-    {ch:"غ", name:"غين"},
-    {ch:"ف", name:"فاء"},
-    {ch:"ق", name:"قاف"},
-    {ch:"ك", name:"كاف"},
-    {ch:"ل", name:"لام"},
-    {ch:"م", name:"ميم"},
-
-    {ch:"ن", name:"نون"},
-    {ch:"ه", name:"هاء"},
-    {ch:"و", name:"واو"},
-    {ch:"ي", name:"ياء"}
-
-  ];
-
-  var LETTER_AUDIO = {
-    "ا":"../../audios/arabic-letters/01.mp3",
-    "ب":"../../audios/arabic-letters/02.mp3",
-    "ت":"../../audios/arabic-letters/03.mp3",
-    "ث":"../../audios/arabic-letters/04.mp3",
-    "ج":"../../audios/arabic-letters/05.mp3",
-    "ح":"../../audios/arabic-letters/06.mp3",
-    "خ":"../../audios/arabic-letters/07.mp3",
-    "د":"../../audios/arabic-letters/08.mp3",
-    "ذ":"../../audios/arabic-letters/09.mp3",
-    "ر":"../../audios/arabic-letters/10.mp3",
-    "ز":"../../audios/arabic-letters/11.mp3",
-    "س":"../../audios/arabic-letters/12.mp3",
-    "ش":"../../audios/arabic-letters/13.mp3",
-    "ص":"../../audios/arabic-letters/14.mp3",
-    "ض":"../../audios/arabic-letters/15.mp3",
-    "ط":"../../audios/arabic-letters/16.mp3",
-    "ظ":"../../audios/arabic-letters/17.mp3",
-    "ع":"../../audios/arabic-letters/18.mp3",
-    "غ":"../../audios/arabic-letters/19.mp3",
-    "ف":"../../audios/arabic-letters/20.mp3",
-    "ق":"../../audios/arabic-letters/21.mp3",
-    "ك":"../../audios/arabic-letters/22.mp3",
-    "ل":"../../audios/arabic-letters/23.mp3",
-    "م":"../../audios/arabic-letters/24.mp3",
-    "ن":"../../audios/arabic-letters/25.mp3",
-    "ه":"../../audios/arabic-letters/26.mp3",
-    "هـ":"../../audios/arabic-letters/26.mp3",
-    "و":"../../audios/arabic-letters/27.mp3",
-    "ي":"../../audios/arabic-letters/28.mp3"
-  };
-
-
-  /* =========================================================
      ROUND SETTINGS
   ========================================================= */
 
-  var ROUND_SIZES = [7,14,21,28];
+  var ROUND_CONFIG = LEVEL1_ROUNDS;
 
-  var SOUNDS_PER_ROUND = 9;
+  var ROUND_SIZES =
+    ROUND_CONFIG.map(
+      function(round){
+        return round.tiles.length;
+      }
+    );
 
   var POINTS_PER_LETTER = 10;
 
   var FALL_SPEED_PX_PER_SEC = 42;
 
   var MAX_SCORE =
-    ROUND_SIZES.length *
-    SOUNDS_PER_ROUND *
+    ROUND_CONFIG.reduce(
+      function(total,round){
+        return total + round.targets.length;
+      },
+      0
+    ) *
     POINTS_PER_LETTER;
 
   var currentRoundIndex = 0;
 
   var activeRoundLetters = [];
-
-
-  /* =========================================================
-     PREVENT SAME ROUND REPEATING
-  ========================================================= */
-
-  var lastRoundSet = [];
 
 
   /* =========================================================
@@ -1570,25 +1499,7 @@ function speak(letter, onComplete){
     return;
   }
 
-  var audioPath =
-    LETTER_AUDIO[letter.ch] ||
-    LETTER_AUDIO["هـ"];
-
-  if(!audioPath){
-    var index =
-      LETTERS.findIndex(
-        function(item){
-          return item.ch === letter.ch;
-        }
-      );
-
-    if(index >= 0){
-      audioPath =
-        "../../audios/arabic-letters/" +
-        String((index % 28) + 1).padStart(2,"0") +
-        ".mp3";
-    }
-  }
+  var audioPath = letter.audio;
 
   if(!audioPath){
     if(typeof onComplete === "function"){
@@ -1692,10 +1603,6 @@ function speak(letter, onComplete){
 
   var targetQueue = [];
 
-  var shownLetters = {};
-
-  var lastShownLetter = null;
-
   var tiles = [];
 
   var lastTs = 0;
@@ -1705,222 +1612,16 @@ function speak(letter, onComplete){
   var boardH = 0;
 
 
-  /* =========================================================
-     RANDOM ROUND LETTER GENERATOR
-  ========================================================= */
+  function loadRound(roundIndex){
 
-  function getRandomRoundLetters(roundIndex){
+    var round =
+      ROUND_CONFIG[roundIndex];
 
-    var count =
-      ROUND_SIZES[roundIndex] ||
-      ROUND_SIZES[
-        ROUND_SIZES.length - 1
-      ];
+    activeRoundLetters =
+      round.tiles.slice();
 
-
-    /*
-      Create a fresh copy of all
-      28 Arabic letters.
-    */
-
-    var pool =
-      LETTERS.slice();
-
-
-    /*
-      Fisher-Yates shuffle
-    */
-
-    for(
-      var i = pool.length - 1;
-      i > 0;
-      i--
-    ){
-
-      var j =
-        Math.floor(
-          Math.random() * (i + 1)
-        );
-
-      var temp =
-        pool[i];
-
-      pool[i] =
-        pool[j];
-
-      pool[j] =
-        temp;
-
-    }
-
-
-    var selected = [];
-
-
-    while(
-      selected.length < count
-    ){
-
-      for(
-        var letterIndex = 0;
-        letterIndex < pool.length && selected.length < count;
-        letterIndex++
-      ){
-
-        selected.push(
-          pool[letterIndex]
-        );
-
-      }
-
-    }
-
-
-    /*
-      Check whether this new set
-      is EXACTLY the same as the
-      previous set.
-    */
-
-    function isSameSet(){
-
-      if(
-        selected.length !==
-        lastRoundSet.length
-      ){
-
-        return false;
-
-      }
-
-
-      return selected.every(
-        function(letter){
-
-          return lastRoundSet.some(
-            function(previous){
-
-              return previous.ch ===
-                letter.ch;
-
-            }
-          );
-
-        }
-      );
-
-    }
-
-
-    /*
-      If same 9 letters appear,
-      reshuffle until a different
-      combination is produced.
-    */
-
-    var attempts = 0;
-
-    while(
-      isSameSet() &&
-      attempts < 20
-    ){
-
-      for(
-        var k = pool.length - 1;
-        k > 0;
-        k--
-      ){
-
-        var r =
-          Math.floor(
-            Math.random() * (k + 1)
-          );
-
-        var temp2 =
-          pool[k];
-
-        pool[k] =
-          pool[r];
-
-        pool[r] =
-          temp2;
-
-      }
-
-
-      selected = [];
-
-
-      while(
-        selected.length < count
-      ){
-
-        for(
-          var reshuffledIndex = 0;
-          reshuffledIndex < pool.length && selected.length < count;
-          reshuffledIndex++
-        ){
-
-          selected.push(
-            pool[reshuffledIndex]
-          );
-
-        }
-
-      }
-
-
-      attempts++;
-
-    }
-
-
-    /*
-      Remember the latest set.
-    */
-
-    lastRoundSet =
-      selected.slice();
-
-
-    return selected;
-
-  }
-
-
-  function getRoundTargets(roundLetters){
-
-    var targets =
-      roundLetters.slice();
-
-
-    for(
-      var i = targets.length - 1;
-      i > 0;
-      i--
-    ){
-
-      var j =
-        Math.floor(
-          Math.random() * (i + 1)
-        );
-
-      var temp =
-        targets[i];
-
-      targets[i] =
-        targets[j];
-
-      targets[j] =
-        temp;
-
-    }
-
-
-    return targets.slice(
-      0,
-      SOUNDS_PER_ROUND
-    );
+    targetQueue =
+      round.targets.slice();
 
   }
 
@@ -1932,7 +1633,7 @@ function speak(letter, onComplete){
   function buildTiles(letterSet){
 
     var set =
-      letterSet || LETTERS;
+      letterSet || ROUND_CONFIG[0].tiles;
 
 
     var motionScale =
@@ -2667,38 +2368,7 @@ function speak(letter, onComplete){
       0;
 
 
-    shownLetters =
-      {};
-
-
-    lastShownLetter =
-      null;
-
-
-    /*
-      IMPORTANT:
-      Clear previous round memory
-      when starting a completely
-      new game.
-    */
-
-    lastRoundSet =
-      [];
-
-
-    /*
-      Generate the first
-      random 9-letter set.
-    */
-
-    activeRoundLetters =
-      getRandomRoundLetters(
-        currentRoundIndex
-      );
-
-
-    targetQueue =
-      getRoundTargets(activeRoundLetters);
+    loadRound(currentRoundIndex);
 
 
     renderLives();
@@ -2773,19 +2443,7 @@ function speak(letter, onComplete){
     currentRoundIndex += 1;
 
 
-    /*
-      Generate a completely
-      NEW random set.
-    */
-
-    activeRoundLetters =
-      getRandomRoundLetters(
-        currentRoundIndex
-      );
-
-
-    targetQueue =
-      getRoundTargets(activeRoundLetters);
+    loadRound(currentRoundIndex);
 
 
     state =
@@ -2796,11 +2454,6 @@ function speak(letter, onComplete){
       "visible"
     );
 
-
-    /*
-      Rebuild the board with
-      the new random letters.
-    */
 
     buildTiles(
       activeRoundLetters
@@ -2838,28 +2491,7 @@ function speak(letter, onComplete){
 
 
     activeRoundLetters =
-      getRandomRoundLetters(
-        currentRoundIndex
-      );
-
-
-    targetQueue.forEach(
-      function(targetLetter, index){
-
-        var hasTarget =
-          activeRoundLetters.some(
-            function(letter){
-              return letter.ch === targetLetter.ch;
-            }
-          );
-
-
-        if(!hasTarget){
-          activeRoundLetters[index] = targetLetter;
-        }
-
-      }
-    );
+      ROUND_CONFIG[currentRoundIndex].tiles.slice();
 
 
     buildTiles(
@@ -2973,23 +2605,7 @@ function startRound(){
 
   }
 
-  var targetIndex =
-    Math.floor(
-      Math.random() * targetQueue.length
-    );
-
-  target =
-    targetQueue.splice(
-      targetIndex,
-      1
-    )[0];
-
-  shownLetters[
-    target.ch
-  ] = true;
-
-  lastShownLetter =
-    target.ch;
+  target = targetQueue.shift();
 
   promptLabel.textContent =
     target.ch;
@@ -3160,13 +2776,6 @@ function startRound(){
           );
 
 
-          /*
-            IMPORTANT:
-            Always generate a new
-            random set for the next
-            challenge.
-          */
-
           nextRound();
 
         },
@@ -3328,12 +2937,6 @@ function startRound(){
 
     else{
 
-      /*
-        Even after a wrong answer
-        or missed letter, create
-        a fresh random set.
-      */
-
       nextRound();
 
     }
@@ -3447,19 +3050,6 @@ function startRound(){
 
     playWrap.style.display =
       "flex";
-
-
-    /*
-      Reset previous round memory
-      so a new game starts fresh.
-    */
-
-    lastRoundSet =
-      [];
-
-
-    shownLetters =
-      {};
 
 
     targetQueue =
